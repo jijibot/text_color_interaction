@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>速度感应交互文字</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap');
+
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            transition: background-color 0.6s ease;
+            font-family: 'Montserrat', sans-serif;
+            background-color: #000; /* 初始背景设为黑色，增加视觉冲击力 */
+        }
+
+        .text-btn {
+            font-size: 10vw;
+            font-weight: 900;
+            cursor: pointer;
+            user-select: none;
+            transition: color 0.6s ease, transform 0.1s;
+            position: relative;
+            letter-spacing: -2px;
+            text-transform: uppercase;
+            
+            /* 关键：初始透明度设为接近 0 */
+            opacity: 0.05; 
+            /* 关键：让透明度变化平滑一点点 */
+            transition: opacity 0.2s ease-out, color 0.6s ease;
+        }
+
+        .text-btn:active {
+            transform: scale(0.95);
+        }
+
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            border-radius: 50%;
+            opacity: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="text-btn" id="textBtn">STAY ACTIVE</div>
+
+    <script>
+        const btn = document.getElementById('textBtn');
+        const body = document.body;
+
+        const wordList = ["SPEED", "MOTION", "GLITCH", "ACTIVE", "GHOST", "SIGNAL"];
+        let currentHue = Math.floor(Math.random() * 360);
+
+        // --- 速度感应逻辑变量 ---
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+        let lastTime = Date.now();
+        let currentOpacity = 0;
+
+        updateView(currentHue);
+
+        // 1. 监听鼠标移动计算速度
+        window.addEventListener('mousemove', (e) => {
+            const now = Date.now();
+            const dt = now - lastTime;
+            if (dt === 0) return; // 防止除以0
+
+            // 计算距离
+            const dx = e.clientX - lastMouseX;
+            const dy = e.clientY - lastMouseY;
+            const distance = Math.sqrt(dx*dx + dy*dy);
+
+            // 计算速度并映射到透明度 (0到1之间)
+            // 这里 1.5 是灵敏度系数，你可以调大它让文字更容易显示
+            let speed = distance / dt;
+            let targetOpacity = Math.min(speed * 1.5, 1); 
+
+            // 如果当前算出的透明度比现有的高，则立刻提升
+            if (targetOpacity > currentOpacity) {
+                currentOpacity = targetOpacity;
+            }
+
+            // 更新位置和时间记录
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+            lastTime = now;
+        });
+
+        // 2. 衰减循环：让透明度随时间自动下降
+        function decay() {
+            if (currentOpacity > 0.05) {
+                currentOpacity -= 0.015; // 每一帧减少的透明度，调大这个值文字消失更快
+            } else {
+                currentOpacity = 0.05; // 维持一个极低的可见度
+            }
+            btn.style.opacity = currentOpacity;
+            requestAnimationFrame(decay); // 持续循环
+        }
+        decay(); // 启动衰减
+
+        // 3. 点击交互逻辑
+        btn.addEventListener('click', () => {
+            const rect = btn.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            const complementHue = (currentHue + 180) % 360;
+            const particleColor = `hsl(${complementHue}, 70%, 60%)`;
+
+            explodeParticles(centerX, centerY, particleColor);
+
+            let newWord = wordList[Math.floor(Math.random() * wordList.length)];
+            while (newWord === btn.innerText) {
+                newWord = wordList[Math.floor(Math.random() * wordList.length)];
+            }
+            btn.innerText = newWord;
+
+            const step = Math.floor(Math.random() * 60) + 60; 
+            currentHue = (currentHue + step) % 360;
+            updateView(currentHue);
+        });
+
+        function updateView(hue) {
+            const complementHue = (hue + 180) % 360;
+            body.style.backgroundColor = `hsl(${hue}, 50%, 15%)`; // 背景调暗，让发光感更强
+            btn.style.color = `hsl(${complementHue}, 80%, 70%)`;
+            // 给文字加点霓虹光影效果
+            btn.style.textShadow = `0 0 20px hsl(${complementHue}, 80%, 50%)`;
+        }
+
+        function explodeParticles(x, y, colorStr) {
+            const particleCount = 25;
+            for (let i = 0; i < particleCount; i++) {
+                const p = document.createElement('div');
+                p.classList.add('particle');
+                document.body.appendChild(p);
+                const size = Math.random() * 6 + 3;
+                p.style.width = `${size}px`;
+                p.style.height = `${size}px`;
+                p.style.backgroundColor = colorStr;
+                p.style.left = `${x}px`;
+                p.style.top = `${y}px`;
+                const angle = Math.random() * Math.PI * 2; 
+                const velocity = Math.random() * 150 + 50; 
+                const tx = Math.cos(angle) * velocity;
+                const ty = Math.sin(angle) * velocity;
+                const animation = p.animate([
+                    { transform: `translate(-50%, -50%) scale(1)`, opacity: 1 },
+                    { transform: `translate(-50%, -50%) translate(${tx}px, ${ty}px) scale(0)`, opacity: 0 }
+                ], {
+                    duration: Math.random() * 500 + 400,
+                    easing: 'cubic-bezier(0, .9, .57, 1)'
+                });
+                animation.onfinish = () => p.remove();
+            }
+        }
+    </script>
+</body>
+</html>
