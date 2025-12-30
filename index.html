@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>Untitled</title>
+    
+
+  </head>
+    
+  <body>
+  <!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>文字互补色交互</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap');
+
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            transition: background-color 0.6s ease;
+            font-family: 'Montserrat', sans-serif; /* 使用粗壮的无衬线字体 */
+        }
+
+        /* 文字按钮样式 */
+        .text-btn {
+            font-size: 8vw; /* 随屏幕宽度自动调整大小 */
+            font-weight: 900;
+            cursor: pointer;
+            user-select: none; /* 防止双击时选中文字 */
+            transition: color 0.6s ease, transform 0.1s;
+            position: relative;
+            letter-spacing: -2px; /* 紧凑一点更好看 */
+            text-transform: uppercase; /* 强制大写 */
+        }
+
+        /* 点击时的缩放反馈 */
+        .text-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 粒子样式 */
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            border-radius: 50%;
+            opacity: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="text-btn" id="textBtn">START</div>
+
+    <script>
+        const btn = document.getElementById('textBtn');
+        const body = document.body;
+
+        // --- 1. 自定义你的随机词库 ---
+        // 你可以在这里随意修改、增加你想要的单词
+        const wordList = [
+            "INSPIRE", "CREATE", "FUTURE", "DESIGN", 
+            "CODING", "MAGIC", "FLOW", "PULSE", 
+            "NEON", "DREAM", "FOCUS", "IGNITE"
+        ];
+
+        let currentHue = Math.floor(Math.random() * 360);
+
+        // 初始化颜色
+        updateView(currentHue);
+
+        btn.addEventListener('click', (e) => {
+            // A. 获取文字中心点 (用于发射粒子)
+            const rect = btn.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            // B. 在颜色改变前，记录当前文字颜色用于粒子
+            // 这样粒子就像是文字碎裂掉下来的碎片
+            const complementHue = (currentHue + 180) % 360;
+            const particleColor = `hsl(${complementHue}, 70%, 60%)`;
+
+            // C. 发射粒子
+            explodeParticles(centerX, centerY, particleColor);
+
+            // D. 随机切换文字
+            // 确保新单词和旧单词不一样
+            let newWord = wordList[Math.floor(Math.random() * wordList.length)];
+            while (newWord === btn.innerText) {
+                newWord = wordList[Math.floor(Math.random() * wordList.length)];
+            }
+            btn.innerText = newWord;
+
+            // E. 切换颜色 (旋转色相)
+            const step = Math.floor(Math.random() * 60) + 60; 
+            currentHue = (currentHue + step) % 360;
+            updateView(currentHue);
+        });
+
+        // 更新背景和文字颜色
+        function updateView(hue) {
+            const complementHue = (hue + 180) % 360;
+            
+            // 背景色：饱和度低一点，看起来舒服
+            body.style.backgroundColor = `hsl(${hue}, 50%, 40%)`;
+            
+            // 文字色：互补色，亮度高一点，保证对比度
+            btn.style.color = `hsl(${complementHue}, 80%, 70%)`;
+        }
+
+        // 粒子动画 (与之前类似，但调整了参数适配文字)
+        function explodeParticles(x, y, colorStr) {
+            const particleCount = 20; // 文字不需要太多粒子，少量精致即可
+
+            for (let i = 0; i < particleCount; i++) {
+                const p = document.createElement('div');
+                p.classList.add('particle');
+                document.body.appendChild(p);
+
+                // 粒子稍微小一点
+                const size = Math.random() * 6 + 3;
+                p.style.width = `${size}px`;
+                p.style.height = `${size}px`;
+                p.style.backgroundColor = colorStr;
+                p.style.left = `${x}px`;
+                p.style.top = `${y}px`;
+
+                const angle = Math.random() * Math.PI * 2; 
+                // 扩散范围随文字大小调整
+                const velocity = Math.random() * 120 + 40; 
+                
+                const tx = Math.cos(angle) * velocity;
+                const ty = Math.sin(angle) * velocity;
+
+                const animation = p.animate([
+                    { transform: `translate(-50%, -50%) scale(1)`, opacity: 1 },
+                    { transform: `translate(-50%, -50%) translate(${tx}px, ${ty}px) scale(0)`, opacity: 0 }
+                ], {
+                    duration: Math.random() * 500 + 400,
+                    easing: 'cubic-bezier(0, .9, .57, 1)'
+                });
+
+                animation.onfinish = () => p.remove();
+            }
+        }
+    </script>
+</body>
+</html>
+    
+  </body>
+  
+</html>
